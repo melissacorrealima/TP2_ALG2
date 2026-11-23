@@ -1,0 +1,17 @@
+# Ambiente virtual e caches do Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Arquivos brutos baixados e resultados temporários de smoke test
+data/raw_tsplib/
+results/*_smoke*
+
+# Arquivos auxiliares de compilação do LaTeX (mantém apenas .tex, .sty, .bib e .pdf)
+report/*.aux
+report/*.bbl
+report/*.blg
+report/*.log
+report/*.out
+report/*.toc

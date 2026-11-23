@@ -1,0 +1,107 @@
+[
+  {
+    "name": "eil51_n10",
+    "n": 10,
+    "tier": "main",
+    "file": "eil51_n10.tsp",
+    "origin": "TSPLIB95:eil51"
+  },
+  {
+    "name": "berlin52_n12",
+    "n": 12,
+    "tier": "main",
+    "file": "berlin52_n12.tsp",
+    "origin": "TSPLIB95:berlin52"
+  },
+  {
+    "name": "st70_n14",
+    "n": 14,
+    "tier": "main",
+    "file": "st70_n14.tsp",
+    "origin": "TSPLIB95:st70"
+  },
+  {
+    "name": "eil51_n16",
+    "n": 16,
+    "tier": "main",
+    "file": "eil51_n16.tsp",
+    "origin": "TSPLIB95:eil51"
+  },
+  {
+    "name": "berlin52_n18",
+    "n": 18,
+    "tier": "main",
+    "file": "berlin52_n18.tsp",
+    "origin": "TSPLIB95:berlin52"
+  },
+  {
+    "name": "st70_n20",
+    "n": 20,
+    "tier": "main",
+    "file": "st70_n20.tsp",
+    "origin": "TSPLIB95:st70"
+  },
+  {
+    "name": "eil51_n22",
+    "n": 22,
+    "tier": "main",
+    "file": "eil51_n22.tsp",
+    "origin": "TSPLIB95:eil51"
+  },
+  {
+    "name": "berlin52_n25",
+    "n": 25,
+    "tier": "main",
+    "file": "berlin52_n25.tsp",
+    "origin": "TSPLIB95:berlin52"
+  },
+  {
+    "name": "wi29",
+    "n": 29,
+    "tier": "main",
+    "file": "wi29.tsp",
+    "origin": "Waterloo-TSPLIB"
+  },
+  {
+    "name": "st70_n32",
+    "n": 32,
+    "tier": "main",
+    "file": "st70_n32.tsp",
+    "origin": "TSPLIB95:st70"
+  },
+  {
+    "name": "eil51_n35",
+    "n": 35,
+    "tier": "main",
+    "file": "eil51_n35.tsp",
+    "origin": "TSPLIB95:eil51"
+  },
+  {
+    "name": "dj38",
+    "n": 38,
+    "tier": "main",
+    "file": "dj38.tsp",
+    "origin": "Waterloo-TSPLIB"
+  },
+  {
+    "name": "eil51",
+    "n": 51,
+    "tier": "limit",
+    "file": "eil51.tsp",
+    "origin": "TSPLIB95"
+  },
+  {
+    "name": "berlin52",
+    "n": 52,
+    "tier": "limit",
+    "file": "berlin52.tsp",
+    "origin": "TSPLIB95"
+  },
+  {
+    "name": "st70",
+    "n": 70,
+    "tier": "limit",
+    "file": "st70.tsp",
+    "origin": "TSPLIB95"
+  }
+]
