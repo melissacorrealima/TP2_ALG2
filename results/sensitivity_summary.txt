@@ -1,40 +1,43 @@
 === ANÁLISE DE SENSIBILIDADE (INSTÂNCIAS ADVERSARIAIS) ===
 
---- Algoritmo: twice_around (N_instâncias=8) ---
-Gap médio: 25.84% | Gap máx: 34.59% (eil51_n10)
-Regressão Linear Múltipla: R²=1.0000, RMSE=0.0000%
-  nn_dist_cv          : beta_pad=+38.730 | corr_Pearson=-0.787
-  clark_evans_r       : beta_pad=+37.185 | corr_Pearson=+0.814
-  aspect_ratio        : beta_pad= -9.636 | corr_Pearson=-0.779
-  mst_leaf_ratio      : beta_pad= -6.842 | corr_Pearson=+0.745
-  spatial_entropy     : beta_pad= +5.615 | corr_Pearson=+0.856
-  mst_max_degree      : beta_pad= +3.926 | corr_Pearson=+0.140
-  convex_hull_ratio   : beta_pad= -1.741 | corr_Pearson=+0.509
-Árvore de Decisão (max_depth=3): R²=0.8431
-|--- spatial_entropy <= 0.82
-|   |--- mst_leaf_ratio <= 0.26
-|   |   |--- value: [19.94]
-|   |--- mst_leaf_ratio >  0.26
-|   |   |--- value: [19.77]
-|--- spatial_entropy >  0.82
-|   |--- nn_dist_cv <= 0.22
-|   |   |--- value: [33.49]
-|   |--- nn_dist_cv >  0.22
-|   |   |--- value: [30.16]
+--- Algoritmo: twice_around (N_instâncias=10) ---
+Gap médio: 26.35% | Gap máx: 34.59% (eil51_n10)
+Regressão Linear Múltipla: R²=0.9059, RMSE=1.8523%
+  spatial_entropy     : beta_pad= +5.296 | corr_Pearson=+0.793
+  nn_dist_cv          : beta_pad= -2.679 | corr_Pearson=-0.673
+  aspect_ratio        : beta_pad= -2.528 | corr_Pearson=-0.772
+  mst_max_degree      : beta_pad= -2.434 | corr_Pearson=+0.107
+  clark_evans_r       : beta_pad= -2.268 | corr_Pearson=+0.696
+  mst_leaf_ratio      : beta_pad= -1.725 | corr_Pearson=+0.477
+  convex_hull_ratio   : beta_pad= +0.469 | corr_Pearson=+0.386
+Árvore de Decisão (max_depth=3): R²=0.8679
+|--- aspect_ratio <= 1.29
+|   |--- spatial_entropy <= 0.85
+|   |   |--- value: [26.90]
+|   |--- spatial_entropy >  0.85
+|   |   |--- nn_dist_cv <= 0.22
+|   |   |   |--- value: [33.49]
+|   |   |--- nn_dist_cv >  0.22
+|   |   |   |--- value: [30.16]
+|--- aspect_ratio >  1.29
+|   |--- value: [18.51]
 
---- Algoritmo: christofides (N_instâncias=8) ---
-Gap médio: 8.00% | Gap máx: 14.76% (st70_n20)
-Regressão Linear Múltipla: R²=1.0000, RMSE=0.0000%
-  clark_evans_r       : beta_pad=-20.590 | corr_Pearson=-0.182
-  nn_dist_cv          : beta_pad=-12.570 | corr_Pearson=+0.086
-  spatial_entropy     : beta_pad=+10.004 | corr_Pearson=+0.241
-  mst_leaf_ratio      : beta_pad= -8.339 | corr_Pearson=+0.165
-  convex_hull_ratio   : beta_pad= +8.272 | corr_Pearson=+0.071
-  mst_max_degree      : beta_pad= -2.321 | corr_Pearson=+0.425
-  aspect_ratio        : beta_pad= -1.200 | corr_Pearson=-0.230
-Árvore de Decisão (max_depth=3): R²=0.3397
+--- Algoritmo: christofides (N_instâncias=10) ---
+Gap médio: 8.71% | Gap máx: 14.76% (st70_n20)
+Regressão Linear Múltipla: R²=0.8791, RMSE=1.2176%
+  clark_evans_r       : beta_pad= -5.914 | corr_Pearson=-0.282
+  spatial_entropy     : beta_pad= +4.659 | corr_Pearson=+0.163
+  convex_hull_ratio   : beta_pad= +1.654 | corr_Pearson=-0.117
+  aspect_ratio        : beta_pad= -1.267 | corr_Pearson=-0.351
+  mst_leaf_ratio      : beta_pad= -1.070 | corr_Pearson=-0.105
+  mst_max_degree      : beta_pad= +0.823 | corr_Pearson=+0.314
+  nn_dist_cv          : beta_pad= +0.135 | corr_Pearson=+0.216
+Árvore de Decisão (max_depth=3): R²=0.5980
 |--- aspect_ratio <= 1.15
-|   |--- value: [10.65]
+|   |--- nn_dist_cv <= 0.42
+|   |   |--- value: [8.59]
+|   |--- nn_dist_cv >  0.42
+|   |   |--- value: [12.62]
 |--- aspect_ratio >  1.15
 |   |--- mst_leaf_ratio <= 0.32
 |   |   |--- value: [6.79]
