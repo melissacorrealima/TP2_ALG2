@@ -1,0 +1,403 @@
+\begin{filecontents*}{referencias.bib}
+@article{reinelt1991,
+  author  = {G. Reinelt},
+  title   = {{TSPLIB}---A Traveling Salesman Problem Library},
+  journal = {ORSA Journal on Computing},
+  volume  = {3},
+  number  = {4},
+  pages   = {376--384},
+  year    = {1991}
+}
+
+@article{jonker1987,
+  author  = {R. Jonker and A. Volgenant},
+  title   = {A Shortest Augmenting Path Algorithm for Dense and Sparse Linear Assignment Problems},
+  journal = {Computing},
+  volume  = {38},
+  pages   = {325--340},
+  year    = {1987}
+}
+
+@article{scipy2020,
+  author  = {P. Virtanen and R. Gommers and T. E. Oliphant and M. Haberland and T. Reddy and D. Cournapeau and E. Burovski and P. Peterson and W. Weckesser and J. Bright and S. J. van der Walt and M. Brett and J. Wilson and K. J. Millman and N. Mayorov and A. R. J. Nelson and E. Jones and R. Kern and E. Larson and C. J. Carey and {\.I}. Polat and Y. Feng and E. W. Moore and J. VanderPlas and D. Laxalde and J. Perktold and R. Cimrman and I. Henriksen and E. A. Quintero and C. R. Harris and A. M. Archibald and A. H. Ribeiro and F. Pedregosa and P. van Mulbregt and {SciPy 1.0 Contributors}},
+  title   = {{SciPy 1.0}: Fundamental Algorithms for Scientific Computing in {Python}},
+  journal = {Nature Methods},
+  volume  = {17},
+  pages   = {261--272},
+  year    = {2020}
+}
+
+@article{prim1957,
+  author  = {R. C. Prim},
+  title   = {Shortest Connection Networks and Some Generalizations},
+  journal = {Bell System Technical Journal},
+  volume  = {36},
+  number  = {6},
+  pages   = {1389--1401},
+  year    = {1957}
+}
+
+@techreport{christofides1976,
+  author      = {N. Christofides},
+  title       = {Worst-Case Analysis of a New Heuristic for the Travelling Salesman Problem},
+  institution = {Carnegie Mellon University},
+  number      = {388},
+  year        = {1976}
+}
+
+@article{clark1954,
+  author  = {P. J. Clark and F. C. Evans},
+  title   = {Distance to Nearest Neighbor as a Measure of Spatial Relationships in Populations},
+  journal = {Ecology},
+  volume  = {35},
+  number  = {4},
+  pages   = {445--453},
+  year    = {1954}
+}
+\end{filecontents*}
+
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+
+\sloppy
+
+\title{Análise Empírica e Otimização de Algoritmos Exatos e Aproximados para o Problema do Caixeiro Viajante}
+
+\author{Aynoa Souza Jorgino\inst{1}, Melissa Costa Corrêa de Lima\inst{1}}
+
+\address{Departamento de Ciência da Computação -- Universidade Federal de Minas Gerais (UFMG)\\
+  Belo Horizonte -- MG -- Brasil
+  \email{\{aynoa,melissaccl\}@ufmg.br}
+}
+
+\begin{document} 
+
+\maketitle
+
+\begin{abstract}
+  This work investigates exact and approximation algorithms for the geometric Traveling Salesman Problem (TSP), focusing on computational auditing, empirical complexity, and geometric sensitivity. A Branch-and-Bound algorithm based on linear assignment is evaluated with five initialization strategies and three search implementations. Twice-around-the-tree and Christofides are analyzed through subroutine profiling. Experiments on 15 instances show that convex hull insertion reduced the number of search nodes by approximately 30.1\% on average, while Christofides achieved a mean approximation gap of 8.63\%. The in-place depth-first search implementation reduced tracked peak memory by 43.25\% compared to the matrix-copying approach, solving 14 of the 15 instances within the time limit.
+\end{abstract}
+     
+\begin{resumo} 
+  Este trabalho investiga algoritmos exatos e aproximados para o Problema do Caixeiro Viajante (TSP) geométrico, com foco em auditoria computacional, complexidade empírica e sensibilidade geométrica. Avalia-se um algoritmo Branch-and-Bound baseado em atribuição linear sob cinco estratégias de inicialização e três variantes de busca, além do profiling de subrotinas para Twice-around-the-tree e Christofides. Experimentos em 15 instâncias mostram que a inserção por fecho convexo reduziu os nós expandidos em cerca de 30,1\%, enquanto Christofides obteve gap médio de 8,63\%. A busca em profundidade in-place reduziu o pico de memória em 43,25\% frente à cópia de matrizes, resolvendo 14 das 15 instâncias no tempo limite.
+\end{resumo}
+
+\section{Introdução}
+
+O Problema do Caixeiro Viajante (\textit{Traveling Salesman Problem} -- TSP) é um problema clássico de otimização combinatória que consiste em determinar um ciclo Hamiltoniano de custo mínimo que visite todos os vértices de um grafo exatamente uma vez. Por ser NP-difícil, a obtenção de soluções ótimas torna-se computacionalmente desafiadora à medida que a dimensão das instâncias aumenta, motivando o emprego de heurísticas e algoritmos aproximados.
+
+Seja $G=(V,E)$ um grafo completo e simétrico, com $N$ vértices e custos $d_{ij}$. O problema pode ser formulado como
+\begin{equation}
+\min_{\pi\in S_N}\left(\sum_{i=1}^{N-1}d_{\pi_i,\pi_{i+1}}+d_{\pi_N,\pi_1}\right),
+\end{equation}
+onde $S_N$ representa o conjunto de permutações dos vértices. Fixando a origem e desconsiderando a orientação do percurso, existem $(N-1)!/2$ ciclos distintos para $N\geq3$.
+
+Neste trabalho, auditamos e avaliamos o Branch-and-Bound e os algoritmos aproximados Twice-around-the-tree e Christofides. Investigamos a influência de cinco estratégias de inicialização sobre a poda da busca exata, os efeitos das estruturas de dados sobre tempo e memória e a relação entre propriedades geométricas das instâncias e qualidade das aproximações. O foco está na análise crítica das implementações e na interpretação dos resultados empíricos, confrontando-os com as complexidades teóricas.
+
+\section{Implementação, Profiling e Auditoria}
+
+\subsection{Representação das instâncias}
+
+A implementação foi desenvolvida em Python 3 utilizando NumPy, SciPy, NetworkX, Pandas, Matplotlib e Scikit-Learn. Os módulos foram separados em leitura de instâncias, heurísticas, algoritmos aproximados, busca exata, extração de características, instrumentação e análise estatística.
+
+As coordenadas são armazenadas em uma matriz $N\times2$, e os custos em uma matriz inteira $N\times N$. Adotamos a convenção EUC\_2D da TSPLIB \cite{reinelt1991}:
+\begin{equation}
+d_{ij}=\left\lfloor\sqrt{(x_i-x_j)^2+(y_i-y_j)^2}+0.5\right\rfloor.
+\end{equation}
+A construção vetorizada da matriz exige tempo e espaço $O(N^2)$, mas permite consultas em $O(1)$. Algumas subrotinas convertem a matriz em listas Python para reduzir o custo de acesso escalar nos laços, introduzindo uma cópia quadrática adicional. O arredondamento EUC\_2D pode violar a desigualdade triangular; portanto, as garantias clássicas de aproximação são condicionadas à validade dessa propriedade.
+
+\subsection{Branch-and-Bound e relaxação de atribuição}
+
+O Branch-and-Bound explora subproblemas definidos por restrições sobre as arestas. O limite superior ($UB$) corresponde ao custo da melhor rota viável conhecida, e o limite inferior ($LB$) é obtido pela relaxação do problema de atribuição linear (LAP):
+\begin{align}
+\min\quad &\sum_{i,j}d_{ij}x_{ij},\\
+\text{sujeito a}\quad &\sum_j x_{ij}=1,\quad \forall i,\\
+&\sum_i x_{ij}=1,\quad \forall j,\\
+&x_{ii}=0,\quad x_{ij}\in\{0,1\}.
+\end{align}
+A relaxação admite múltiplos subciclos, mas contém todas as soluções hamiltonianas admissíveis, de modo que $OPT_{\mathrm{LAP}}\leq OPT_{\mathrm{TSP}}$. A resolução utiliza \texttt{linear\_sum\_assignment} da SciPy, baseada em uma variante de Jonker--Volgenant \cite{jonker1987,scipy2020}. Arestas proibidas e a diagonal recebem custo $10^{12}$, suficientemente elevado para as instâncias consideradas.
+
+Um nó é podado quando $LB\geq UB$ ou quando a atribuição indica inviabilidade. Se a atribuição forma um único ciclo hamiltoniano de custo inferior ao incumbente, atualiza-se a melhor solução. Caso contrário, seleciona-se o menor subciclo $C=(e_0,\ldots,e_{k-1})$. Como um ciclo hamiltoniano não pode conter integralmente um subciclo próprio, o ramo $r$ força as arestas anteriores a $e_r$ e proíbe $e_r$. Assim, os ramos particionam as soluções segundo a primeira aresta ausente de $C$, evitando sobreposição entre subproblemas. A escolha do menor subciclo limita o fator de ramificação local.
+
+Considerando $B$ chamadas ao LAP e custo cúbico de referência por chamada, a parcela correspondente à atribuição é $O(BN^3)$. O crescimento combinatório de $B$ mantém o algoritmo não polinomial no pior caso.
+
+\subsection{Refatoração e estratégias de exploração}
+
+Ferramentas de IA generativa foram utilizadas como apoio ao desenvolvimento. A auditoria concentrou-se nas limitações das abordagens iniciais, principalmente nas cópias de matrizes e no armazenamento da fronteira de busca. Foram comparadas três variantes:
+
+\textbf{DFS com cópias:} cada subproblema recebe uma cópia da matriz de custos. Embora simplifique o isolamento dos estados, a operação custa $O(N^2)$ por cópia. Para profundidade $D$, as matrizes mantidas na pilha podem ocupar $O(DN^2)$ de memória.
+
+\textbf{DFS In-place:} uma única matriz de trabalho é modificada durante a recursão. Para forçar $(u,v)$, são proibidas as demais saídas de $u$, as demais entradas de $v$ e a aresta inversa. Cada alteração é registrada em um \textit{undo-log}, que restaura os valores originais após a exploração do ramo. Essa refatoração evita manter uma matriz completa por nível. A matriz e as alterações ativas têm armazenamento quadrático, mas o consumo total inclui também a pilha recursiva e as estruturas auxiliares; não se afirma, portanto, que toda a busca tenha espaço independente da profundidade.
+
+\textbf{Best-First:} utiliza uma fila de prioridade implementada com \texttt{heapq}, ordenada pelo limite inferior. Os estados armazenam as restrições de arestas e a atribuição correspondente, em vez de matrizes completas. Ainda assim, a fronteira pode crescer exponencialmente. A implementação interrompe a busca quando a fila ultrapassa 50\,000 elementos. Essa variante permite investigar o compromisso entre a seleção dos nós mais promissores e o consumo de memória.
+
+A variante DFS In-place foi adotada como estratégia principal por limitar o armazenamento simultâneo de estados. A comparação empírica permite verificar se essa escolha também produz benefícios temporais, considerando que os registros de restauração utilizam operações explícitas em Python, enquanto cópias NumPy são executadas em código compilado.
+
+\subsection{Algoritmos aproximados}
+
+Ambos os métodos utilizam uma árvore geradora mínima (MST), construída por uma implementação densa de Prim \cite{prim1957}, com vetores de vértices incorporados, menores custos de conexão e predecessores. Em um grafo completo, essa abordagem evita a manutenção de uma fila de prioridade para todas as arestas e apresenta custo temporal $O(N^2)$.
+
+\textbf{Twice-around-the-tree:} a duplicação conceitual das arestas da MST produz um circuito euleriano. Na implementação, uma DFS iterativa sobre listas de adjacência registra diretamente a ordem de primeira visita, dispensando a construção do multigrafo duplicado. Como $w(T)\leq OPT$, os atalhos garantem $C_{\mathrm{Twice}}\leq2OPT$ sob a hipótese métrica. O percurso custa $O(N)$ e o algoritmo completo, $O(N^2)$.
+
+\textbf{Christofides:} identifica-se o conjunto $O$ de vértices de grau ímpar da MST e constrói-se um emparelhamento perfeito de peso mínimo utilizando Blossom, via NetworkX. A cardinalidade do emparelhamento é verificada antes de combinar suas arestas com a MST. O circuito euleriano é obtido pelo algoritmo iterativo de Hierholzer e os vértices repetidos são eliminados. Para custos métricos, $w(M)\leq OPT/2$ e $w(T)\leq OPT$, resultando em $C_{\mathrm{Christofides}}\leq 1.5OPT$ \cite{christofides1976}. Se $m=|O|$, o subgrafo possui $m(m-1)/2$ arestas e o custo temporal de referência é $O(N^2+m^3)$. Assim, a dimensão do emparelhamento, e não apenas $N$, influencia o desempenho. A remoção de arestas inversas nas listas de adjacência também introduz buscas lineares no grau local.
+
+\subsection{Estratégias de warm-start}
+
+As cinco estratégias fornecem uma rota inicial viável e seu custo como limite superior do Branch-and-Bound:
+\begin{itemize}
+\item \textbf{Cold Start:} visita os vértices na ordem original, com custo $O(N)$.
+\item \textbf{Vizinho Mais Próximo:} escolhe sucessivamente o vértice não visitado mais próximo, com custo $O(N^2)$.
+\item \textbf{Fecho Convexo:} constrói a rota inicial com os vértices extremos e insere os demais minimizando $\Delta(i,v,j)=d_{iv}+d_{vj}-d_{ij}$. A busca por todas as posições e vértices restantes possui custo $O(N^3)$. Para casos degenerados, utiliza-se projeção pelo eixo principal via SVD.
+\item \textbf{Twice-around-the-tree e Christofides:} utilizam as rotas obtidas pelos métodos aproximados descritos anteriormente.
+\end{itemize}
+O benefício de uma inicialização depende da relação entre seu custo e a redução do espaço de busca. Um limite superior mais restritivo pode aumentar a eficiência da poda, mas não necessariamente reduzir o tempo total.
+
+\subsection{Instrumentação}
+
+O tempo é medido com \texttt{time.perf\_counter()} e o pico de alocações rastreadas com \texttt{tracemalloc}. A implementação permite separar as medições de tempo e memória para evitar que o rastreamento de alocações distorça as curvas temporais. Uma rotina auxiliar executa a coleta de lixo antes da medição isolada de memória.
+
+No Twice-around-the-tree, são instrumentados Prim e o percurso DFS. Em Christofides, são medidos Prim, construção do subgrafo ímpar, matching e circuito euleriano com atalhos. Na busca exata, registram-se tempo de inicialização e busca, tempo acumulado do LAP, nós avaliados, podas por limite e inviabilidade, profundidade e estado da execução. O \texttt{tracemalloc} não mede integralmente a memória residente do processo, e conversões realizadas fora dos contextos instrumentados não estão necessariamente incluídas nos tempos por subrotina.
+
+\section{Experimentos e Resultados}
+
+\subsection{Conjunto de teste e metodologia}
+
+O conjunto experimental é composto por 15 instâncias com dimensões entre 10 e 70 vértices, incluindo instâncias originais da TSPLIB e subconjuntos derivados de suas coordenadas. A faixa principal contém 12 instâncias com até 38 vértices, correspondendo a 80\% da amostra. As instâncias \texttt{eil51}, \texttt{berlin52} e \texttt{st70} constituem a faixa de estresse, utilizada para investigar os limites computacionais da busca exata.
+
+Foram avaliadas cinco estratégias de inicialização do Branch-and-Bound para cada instância, totalizando 75 execuções, com limite de processamento de 1800 segundos por execução. Desse total, 70 foram concluídas com certificação de otimalidade e cinco foram interrompidas por timeout, todas associadas à instância \texttt{st70}. Nas execuções interrompidas, o tempo de conclusão foi registrado como NA, preservando-se as estatísticas parciais da árvore de busca. Para o cálculo dos gaps, foram utilizados os ótimos certificados ou os valores ótimos publicados pela TSPLIB.
+
+A qualidade das rotas é avaliada pelo gap percentual em relação ao ótimo $C^*$, obtido de resultados certificados ou valores publicados compatíveis com os custos empregados:
+\begin{equation}
+Gap=100\frac{C_{\mathrm{alg}}-C^*}{C^*}.
+\end{equation}
+Para comparar as inicializações, utilizamos a redução relativa dos nós avaliados $R_h=100(1-E_h/E_{\mathrm{cold}})$, calculada por instância, e o tempo total $T_{\mathrm{total}}=T_{\mathrm{warm}}+T_{\mathrm{busca}}$. Os dados são armazenados em CSV e processados pelo módulo \texttt{analysis.py}.
+
+\subsection{Modelagem da complexidade empírica}
+
+Foram ajustados modelos de regressão por mínimos quadrados não lineares, utilizando a função \texttt{curve\_fit} da SciPy, para avaliar a concordância entre o comportamento empírico dos algoritmos e suas complexidades teóricas. Os modelos considerados foram $aN^2+b$, $aN^2\log_2 N+b$, $aN^3+b$ e $ab^N$, sendo este último aplicado à busca exata.
+
+A qualidade dos ajustes foi avaliada pelo coeficiente de determinação ($R^2$) e pela raiz do erro quadrático médio (RMSE). A Tabela~\ref{tab:reg} apresenta os resultados dos 17 modelos ajustados. As curvas de regressão temporais das heurísticas e aproximações são ilustradas na Figura~\ref{fig:complexidade}(a), enquanto a Figura~\ref{fig:reg_bnb} apresenta os ajustes exponenciais do Branch-and-Bound. Os modelos espaciais e os ajustes das subrotinas críticas são sintetizados na Tabela~\ref{tab:reg} e discutidos ao longo do texto.
+
+\begin{table}[ht]
+\centering
+\caption{Modelos de regressão ajustados para complexidade temporal e espacial.}
+\label{tab:reg}
+\small
+\begin{tabular}{lllcrr}
+\toprule
+Alvo & Métrica & Modelo & $R^2$ & RMSE & $n$ \\
+\midrule
+Vizinho próximo & Tempo (s) & $O(N^2)$ & 0,9881 & $2,54\cdot10^{-6}$ & 15 \\
+Vizinho próximo & Mem. (KB) & $O(N^2)$ & 0,4257 & $18,46$ & 15 \\
+Fecho convexo & Tempo (s) & $O(N^2)$ & 0,9791 & $1,14\cdot10^{-4}$ & 15 \\
+Fecho convexo & Tempo (s) & $O(N^3)$ & 0,9897 & $7,98\cdot10^{-5}$ & 15 \\
+Fecho convexo & Mem. (KB) & $O(N^2)$ & 0,4257 & $18,44$ & 15 \\
+Twice-around & Tempo (s) & $O(N^2)$ & 0,9881 & $6,61\cdot10^{-6}$ & 15 \\
+Twice-around & Tempo (s) & $O(N^2\log N)$ & 0,9788 & $8,81\cdot10^{-6}$ & 15 \\
+Twice-around & Mem. (KB) & $O(N^2)$ & 0,4634 & $18,60$ & 15 \\
+Christofides & Tempo (s) & $O(N^2)$ & 0,9265 & $6,65\cdot10^{-4}$ & 15 \\
+Christofides & Tempo (s) & $O(N^3)$ & 0,9859 & $2,91\cdot10^{-4}$ & 15 \\
+Christofides & Mem. (KB) & $O(N^2)$ & 0,9843 & $12,54$ & 15 \\
+Sub: Prim MST & Tempo (s) & $O(N^2)$ & 0,9906 & $5,40\cdot10^{-6}$ & 15 \\
+Sub: Matching & Tempo (s) & $O(N^3)$ & 0,9824 & $3,08\cdot10^{-4}$ & 15 \\
+Sub: Matching & Tempo (s) & $O(N^2)$ & 0,9186 & $6,64\cdot10^{-4}$ & 15 \\
+BnB: Cold Start & Tempo (s) & $O(a\cdot b^N)$ & 0,9989 & $3,61$ & 14 \\
+BnB: Fecho Conv. & Tempo (s) & $O(a\cdot b^N)$ & 0,9987 & $2,58$ & 14 \\
+BnB: Christofides & Tempo (s) & $O(a\cdot b^N)$ & 0,9983 & $2,93$ & 14 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.92\linewidth]{fig8_regressoes_bnb.pdf}
+    \caption{Ajustes exponenciais dos tempos de execução do Branch-and-Bound para três estratégias de inicialização, considerando as execuções concluídas.}
+    \label{fig:reg_bnb}
+\end{figure}
+\textbf{Complexidade temporal:} a Figura~\ref{fig:complexidade}(a) evidencia forte aderência do Vizinho Mais Próximo e do Twice-around-the-tree ao modelo quadrático, ambos com $R^2=0,9881$. Para o Twice-around-the-tree, o ajuste quadrático superou o modelo $N^2\log N$, cujo coeficiente de determinação foi de $0,9788$.
+
+A inserção por fecho convexo e Christofides apresentaram melhores ajustes ao modelo cúbico, com $R^2=0,9897$ e $R^2=0,9859$, respectivamente. A inclusão das instâncias de maior dimensão ($N=51,52,70$) contribuiu para distinguir os comportamentos quadrático e cúbico.
+
+\textbf{Complexidade espacial:} os modelos quadráticos de memória, resumidos na Tabela~\ref{tab:reg}, indicam forte aderência apenas para Christofides ($R^2=0,9843$), resultado compatível com o armazenamento do subgrafo completo dos vértices de grau ímpar. Nos demais algoritmos, os ajustes foram menos expressivos ($R^2$ entre $0,4257$ e $0,4634$), indicando que a dimensão da instância explica apenas parcialmente a variabilidade da memória rastreada.
+
+\textbf{Subrotinas críticas:} os modelos resumidos na Tabela~\ref{tab:reg} indicam predominância do comportamento quadrático na construção da MST por Prim ($R^2=0,9906$) e do comportamento cúbico no emparelhamento de peso mínimo ($R^2=0,9824$). Este último apresentou melhor aderência que o modelo quadrático ($R^2=0,9186$), sendo consistente com a identificação do Matching como principal gargalo computacional de Christofides.
+
+\textbf{Busca exata:} os modelos exponenciais do Branch-and-Bound, apresentados na Figura~\ref{fig:reg_bnb}, obtiveram $R^2>0,998$ para as três estratégias avaliadas. Entretanto, as curvas apresentam desvios significativos em relação aos tempos observados nas instâncias menores. Como o ajuste minimiza os erros quadráticos na escala original, os maiores tempos exercem maior influência sobre a regressão. Assim, o elevado coeficiente de determinação não implica boa capacidade descritiva em toda a faixa experimental.
+
+De modo geral, os ajustes permitem identificar tendências de crescimento computacional compatíveis com as complexidades teóricas, mas não constituem demonstrações formais do comportamento assintótico.
+
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{fig1_complexidade_aproximados.png}
+\caption{(a) Curvas empíricas e ajustes polinomiais das heurísticas e aproximações até $N=70$; (b) decomposição de tempo por subrotina no algoritmo de Christofides.}
+\label{fig:complexidade}
+\end{figure}
+
+\subsection{Profiling e auditoria computacional}
+
+A Figura~\ref{fig:complexidade}(b) evidencia o domínio do emparelhamento mínimo no algoritmo de Christofides. Na instância \texttt{st70}, a subrotina \texttt{min\_weight\_matching} correspondeu a 94,4\% do tempo total, com pico de memória rastreada de 170,8~KB. Esse resultado indica que otimizações adicionais na construção da MST teriam impacto limitado sobre o desempenho total, sendo o emparelhamento a principal oportunidade de otimização.
+
+\begin{table}[ht]
+\centering
+\caption{Auditoria das três variantes do Branch-and-Bound ($N\leq 24$).}
+\label{tab:auditoria}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Variante & Tempo médio (s) & Nós (mediana) & Pico RAM médio (KB) \\
+\midrule
+Best-First & 0,034 & 121,0 & 582,133 \\
+DFS In-place & 0,031 & 340,0 & 37,456 \\
+DFS com cópias & 0,021 & 340,0 & 66,000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A Tabela~\ref{tab:auditoria} resume a auditoria arquitetural do \textit{Branch-and-Bound}:
+
+\textbf{DFS In-place vs. DFS com cópias:} ambas apresentam a mesma mediana de nós expandidos (340), mas a utilização de uma matriz mutável com \textit{undo-log} reduz o pico médio de memória rastreada em 43,25\%. A versão com cópias apresentou menor tempo médio (0,021~s contra 0,031~s), possivelmente devido ao custo dos laços de restauração em Python. Entretanto, a estratégia \textit{in-place} evita a manutenção de cópias integrais da matriz em cada nível da árvore.
+
+\textbf{DFS vs. Best-First:} a manutenção simultânea dos estados na fila de prioridade elevou o consumo médio de memória do Best-First para 582,133~KB, aproximadamente 15,54 vezes o valor registrado pelo DFS In-place. Embora o Best-First apresente menor mediana de nós contabilizados, as variantes utilizam critérios distintos de contagem. Os resultados de memória justificam a escolha do DFS In-place como estratégia principal.
+
+\subsection{Impacto do warm-start na árvore de busca}
+
+\begin{table}[ht]
+\centering
+\caption{Desempenho agregado do Branch-and-Bound por estratégia de warm-start (15 instâncias, timeout = 1800~s).}
+\label{tab:warm}
+\footnotesize
+\begin{tabular}{lrrrrrrr}
+\toprule
+Estratégia & Resolv. & Timeouts & $UB$ méd. & Init. (ms) & Nós exp. & Nós pod. & Tempo (s) \\
+\midrule
+Cold Start & 14 & 1 & 8495,27 & 0,004 & 17\,277 & 10\,976 & 0,220 \\
+Viz. Mais Próx. & 14 & 1 & 5007,07 & 0,028 & 17\,277 & 10\,976 & 0,206 \\
+Fecho Convexo & 14 & 1 & 4050,00 & 0,558 & 15\,661 & 9\,958 & 0,185 \\
+Twice-around & 14 & 1 & 5066,13 & 0,068 & 17\,277 & 10\,976 & 0,214 \\
+Christofides & 14 & 1 & 4310,07 & 1,598 & 17\,158 & 10\,892 & 0,195 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{fig2_bnb_warmstart.png}
+\caption{(a) Tempo de execução do Branch-and-Bound (escala logarítmica) até o ponto de colapso; (b) redução média percentual de nós expandidos em relação ao Cold Start.}
+\label{fig:warm}
+\end{figure}
+
+A análise conjunta da Tabela~\ref{tab:warm} e da Figura~\ref{fig:warm} evidencia um \textit{trade-off} altamente favorável para as heurísticas construtivas mais informadas, além de delimitar com precisão o ponto de colapso da busca exata. Sob a perspectiva da poda, o investimento computacional reduzido das inicializações fortes é amplamente compensado pela restrição imediata do espaço de busca: a inserção por Fecho Convexo consome apenas $0,558\text{ ms}$ em média para reduzir o limite superior inicial de $8495,27$ (\textit{Cold Start}) para $4050,00$, alcançando uma redução média de $\approx 30,1\%$ nos nós expandidos (Figura~\ref{fig:warm}(b)) e a menor mediana de tempo de busca ($0,185\text{ s}$). De forma semelhante, Christofides reduz os nós expandidos em $\approx 16,5\%$ ao custo inicial de $1,598\text{ ms}$ (mediana de busca de $0,195\text{ s}$). Em contrapartida, \textit{Twice-around-the-tree} e Vizinho Mais Próximo produzem ganhos marginais ($0,0\%$ e $\approx 1,9\%$, respectivamente), pois seus limites superiores frequentemente permanecem acima dos incumbentes descobertos rapidamente pelos primeiros mergulhos em profundidade da DFS.
+
+Considerando o baixo custo das inicializações em relação ao tempo de busca observado, os resultados indicam um compromisso favorável para a inserção por fecho convexo e Christofides. Uma redução no número absoluto de nós podados não implica menor eficiência da poda, pois uma árvore mais restrita pode gerar menos subproblemas. As reduções percentuais incluem as estatísticas parciais das execuções interrompidas, devendo ser interpretadas considerando essa limitação.
+
+Quanto à escalabilidade assintótica, a combinação entre a relaxação LAP em C e a mutação \textit{in-place} permitiu resolver todas as 12 instâncias da Faixa Principal ($N \leq 38$) e ainda certificar o ótimo exato de duas instâncias da Faixa Limite: \texttt{eil51} ($N=51$, $C^*=426$, em $\approx 60\text{--}70\text{ s}$) e \texttt{berlin52} ($N=52$, $C^*=7542$, em $\approx 280\text{--}460\text{ s}$). Na instância \texttt{st70} ($N=70$), todas as cinco estratégias atingiram o limite de 1800 segundos, enquanto os algoritmos aproximados finalizaram em menos de 10~ms. Esse resultado evidencia as limitações de escalabilidade da busca exata, sem estabelecer um limite universal de dimensão, uma vez que a dificuldade computacional também depende das características de cada instância.
+
+\subsection{Qualidade das soluções}
+
+A Tabela~\ref{tab:gaps} e a Figura~\ref{fig:gaps} apresentam os \textit{gaps} percentuais em relação ao ótimo exato nas 15 instâncias.
+
+\begin{table}[ht]
+\centering
+\caption{Resumo dos gaps de aproximação (\%) nas 15 instâncias.}
+\label{tab:gaps}
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Estratégia & Média (\%) & Mediana (\%) & Máximo (\%) & DP (\%) \\
+\midrule
+Cold Start & 144,35 & 102,71 & 405,19 & 95,34 \\
+Twice-around & 28,44 & 30,03 & 36,38 & 6,11 \\
+Vizinho próximo & 20,95 & 19,95 & 46,41 & 10,22 \\
+Christofides & 8,63 & 8,46 & 14,76 & 3,81 \\
+Fecho convexo & 2,08 & 1,93 & 7,46 & 2,12 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{fig4_gaps_por_instancia.png}
+\caption{Gap percentual em relação ao ótimo para cada algoritmo ao longo das 15 instâncias ordenadas por $N$.}
+\label{fig:gaps}
+\end{figure}
+
+Christofides obteve \textit{gap} médio de 8,63\% (máximo de 14,76\% em \texttt{st70\_n20}), reduzindo o erro médio em 69,7\% frente ao \textit{Twice-around-the-tree} (média de 28,44\%, máximo de 36,38\% em \texttt{eil51}). O Vizinho Mais Próximo apresentou alta instabilidade, atingindo pico adversarial de 46,41\% em \texttt{dj38} devido a saltos tardios entre regiões distantes. A inserção por Fecho Convexo destacou-se pela precisão geométrica no plano euclidiano, alcançando \textit{gap} médio de apenas 2,08\% (máximo de 7,46\% em \texttt{berlin52}).
+
+\subsection{Análise de sensibilidade geométrica e topológica}
+
+Foram selecionadas sete características geométricas e topológicas para investigar a variabilidade dos gaps de aproximação, conforme a Tabela~\ref{tab:features}.
+
+\begin{table}[htbp]
+\centering
+\caption{Características utilizadas na análise de sensibilidade.}
+\label{tab:features}
+\small
+\begin{tabular}{lp{8cm}}
+\toprule
+Característica & Descrição \\
+\midrule
+Razão de aspecto & Alongamento da região delimitadora dos pontos. \\
+Fecho convexo & Proporção de vértices pertencentes ao fecho convexo. \\
+Entropia espacial & Dispersão dos pontos em uma grade adaptativa. \\
+Clark--Evans & Indicador de concentração ou regularidade espacial. \\
+Grau máximo da MST & Maior grau entre os vértices da árvore. \\
+Proporção de folhas & Fração de vértices da MST com grau unitário. \\
+CV local & Variabilidade das distâncias ao vizinho mais próximo. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A regressão linear múltipla foi formulada como
+\begin{equation}
+Gap_i=\beta_0+\sum_{j=1}^{7}\beta_jz_{ij}+\varepsilon_i,
+\end{equation}
+onde $z_{ij}$ representa a característica padronizada. Os coeficientes positivos indicam associação parcial com o aumento do gap, enquanto coeficientes negativos indicam associação com sua redução, mantendo-se constantes as demais características.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{fig3_sensibilidade_features.png}
+\caption{Coeficientes padronizados ($\beta$) da regressão linear múltipla relacionando métricas topológicas ao gap de aproximação nas 15 instâncias.}
+\label{fig:sens}
+\end{figure}
+
+Ajustaram-se modelos de Regressão Linear Múltipla com preditores padronizados $z_j=(x_j-\mu_j)/\sigma_j$ e Árvores de Regressão (\texttt{max\_depth=3}) sobre as 15 instâncias (Figura~\ref{fig:sens}):
+
+\textbf{Twice-around-the-tree ($R^2 = 0,81$):} os maiores impactos positivos sobre o erro (pioram o \textit{gap}) ocorrem no índice de Clark--Evans ($\beta \approx +5,85$) \cite{clark1954}, no CV local ($\beta \approx +4,65$) e na entropia espacial ($\beta \approx +2,32$), enquanto a proporção de pontos no fecho convexo ($\beta \approx -4,65$) e a razão de aspecto ($\beta \approx -2,35$) reduzem o erro. Em distribuições dispersas e de alta entropia (como \texttt{eil51}, onde o \textit{gap} atinge 36,38\%), os retrocessos da DFS na MST geram atalhos longos que cruzam o interior da nuvem de pontos.
+
+\textbf{Christofides ($R^2 = 0,54$):} apresenta comportamento estrutural distinto. Os coeficientes mais expressivos são negativos para Clark--Evans ($\beta \approx -6,95$) e CV local ($\beta \approx -3,78$), enquanto entropia espacial ($\beta \approx +2,45$) e proporção de folhas na MST ($\beta \approx +2,02$) aumentam o \textit{gap}. Isso ocorre porque instâncias fortemente clusterizadas ($R$ baixo) com muitas folhas geram vértices de grau ímpar concentrados nas extremidades dos grupos, exigindo arestas de emparelhamento mais longas entre clusters, embora o passo de emparelhamento mínimo absorva grande parte da penalidade que afeta o \textit{Twice-around}.
+As diferenças entre os coeficientes dos dois algoritmos indicam que a geometria das instâncias está associada de maneira distinta à qualidade das aproximações. A etapa de emparelhamento de Christofides pode contribuir para atenuar determinadas limitações do percurso baseado exclusivamente na MST. Entretanto, os coeficientes representam associações condicionais e não relações causais, podendo também ser influenciados pela correlação entre as variáveis explicativas.
+
+\subsection{Limitações experimentais}
+
+Embora a ampliação para 15 instâncias tenha permitido identificar o ponto de colapso do \textit{Branch-and-Bound} em $N=70$, algumas limitações devem ser consideradas na interpretação dos resultados:
+
+\textbf{Tamanho amostral e ajuste dentro da amostra:} a amostra de 15 instâncias para sete variáveis explicativas restringe os graus de liberdade da regressão múltipla. Além disso, os coeficientes $R^2$ foram avaliados sobre os próprios dados de ajuste, sem validação cruzada fora da amostra, de modo que os modelos descrevem associações empíricas no conjunto avaliado e não garantem generalização preditiva irrestrita.
+
+\textbf{Dependência entre subinstâncias:} os subconjuntos extraídos dos primeiros $k$ vértices de \texttt{eil51}, \texttt{berlin52} e \texttt{st70} compartilham padrões espaciais com suas instâncias de origem, reduzindo a independência estatística entre as observações.
+
+\textbf{Discretização \texttt{EUC\_2D}:} o arredondamento inteiro padrão da TSPLIB95 pode introduzir pequenas violações locais da desigualdade triangular, condicionando a aplicação estrita das cotas teóricas de pior caso.
+
+
+
+\section{Conclusão}
+
+A análise experimental evidenciou a influência das estruturas de dados, das estratégias de inicialização e das propriedades geométricas das instâncias sobre o desempenho dos algoritmos para o TSP. A refatoração DFS In-place com \textit{undo-log} reduziu em 43,25\% o pico médio de memória rastreada em relação à versão com cópias, justificando sua escolha como estratégia principal da busca exata.
+
+Entre as estratégias de warm-start, a inserção por fecho convexo apresentou o melhor compromisso observado entre qualidade da solução inicial e redução do espaço de busca, com gap médio de 2,08\% e redução média de 30,1\% dos nós expandidos. O Branch-and-Bound certificou o ótimo de 14 das 15 instâncias, atingindo o limite de tempo na instância \texttt{st70}.
+
+Nos algoritmos aproximados, o profiling identificou o emparelhamento de peso mínimo como principal gargalo de Christofides, que apresentou gap médio de 8,63\%, frente a 28,44\% do Twice-around-the-tree. Os modelos de regressão apresentaram tendências compatíveis com as complexidades teóricas, embora o ajuste exponencial da busca exata tenha apresentado limitações descritivas nas instâncias menores.
+
+Por fim, a análise de sensibilidade identificou associações entre dispersão espacial, fecho convexo, características da MST e qualidade das aproximações. Os resultados reforçam a importância da avaliação conjunta da complexidade teórica, das decisões de implementação e das propriedades das instâncias.
+
+\bibliographystyle{sbc}
+\bibliography{referencias}
+
+\end{document}
