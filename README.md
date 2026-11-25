@@ -1,4 +1,8 @@
-# Trabalho Prático 2: Análise Empírica e Otimização para o Caixeiro Viajante (TSP)
+# Trabalho Prático 2: Análise Empírica e Otimização para o Caixeiro Viajante 
+
+## Integrantes
+- Aynoa Souza Jorgino
+- Melissa Costa Corrêa de Lima
 
 ---
 
